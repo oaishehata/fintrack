@@ -1,0 +1,5 @@
+Account Type,Account Number,Transaction Date,Cheque Number,Description 1,Description 2,CAD$,USD$,category
+Chequing,123456,2025-10-24,,Tim Hortons Coffee,,3.50,,Food
+Chequing,123456,2025-10-24,,Netflix Subscription,,15.00,,Entertainment
+Savings,654321,2025-10-25,,Shell Gas Station,,60.00,,Transport
+Chequing,123456,2025-10-25,,Sobeys Groceries,,75.00,,Food
