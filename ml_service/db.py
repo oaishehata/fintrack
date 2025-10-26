@@ -2,17 +2,6 @@ import psycopg
 from psycopg.rows import dict_row
 from config import DB_CONFIG
 
-
-def get_connection():
-    return psycopg.connect(
-        host=DB_CONFIG["host"],
-        port=DB_CONFIG["port"],
-        user=DB_CONFIG["user"],
-        password=DB_CONFIG["password"],
-        dbname=DB_CONFIG["database"]
-    )
-
-
 def init_db():
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -33,6 +22,15 @@ def init_db():
     print("✅ Database initialized")
 
 
+def get_connection():
+    return psycopg.connect(
+        host=DB_CONFIG["host"],
+        port=DB_CONFIG["port"],
+        user=DB_CONFIG["user"],
+        password=DB_CONFIG["password"],
+        dbname=DB_CONFIG["database"],
+    )
+
 def insert_transaction(data):
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -41,17 +39,16 @@ def insert_transaction(data):
                             account_type, account_number, transaction_date,
                             cheque_number, description_1, description_2,
                             cad_amount, usd_amount, category
-                        )
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);
+                        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);
                         """, (
-                            data.get("Account Type"),
-                            data.get("Account Number"),
-                            data.get("Transaction Date"),
-                            data.get("Cheque Number"),
-                            data.get("Description 1"),
-                            data.get("Description 2"),
-                            data.get("CAD$"),
-                            data.get("USD$"),
+                            data.get("account_type"),
+                            data.get("account_number"),
+                            data.get("transaction_date"),
+                            data.get("cheque_number"),
+                            data.get("description_1"),
+                            data.get("description_2"),
+                            data.get("cad_amount"),
+                            data.get("usd_amount"),
                             data.get("category")
                         ))
 
