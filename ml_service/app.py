@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from db import init_db, insert_transaction
-from model import train_model, predict_category
+import threading
+from classify_transactions import main as classify_transactions_main
 import pandas as pd
+
 
 app = Flask(__name__)
 CORS(app)
@@ -12,23 +14,6 @@ def setup_db_once():
         init_db()
         app._db_initialized = True
         print("Database initialized")
-
-@app.route("/add", methods=["POST"])
-def add_transaction():
-    data = request.json
-    insert_transaction(data)
-    return jsonify({"message": "Transaction added."})
-
-@app.route("/train", methods=["POST"])
-def train():
-    train_model()
-    return jsonify({"message": "Model trained successfully."})
-
-@app.route("/predict", methods=["POST"])
-def predict():
-    transactions = request.json.get("transactions", [])
-    results = predict_category(transactions)
-    return jsonify(results)
 
 @app.route("/upload_csv", methods=["POST"])
 def upload_csv():
@@ -97,7 +82,11 @@ def upload_csv():
             inserted += 1
 
         print(f" Inserted {inserted} rows successfully.")
+        threading.Thread(target=classify_transactions_main, daemon=True).start()
+
         return jsonify({"message": f"Uploaded {inserted} transactions successfully!"}), 200
+
+
 
     except Exception as e:
         import traceback

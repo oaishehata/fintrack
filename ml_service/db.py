@@ -23,12 +23,15 @@ def init_db():
 
 
 def get_connection():
+    cfg = DB_CONFIG.copy()
+    cfg["dbname"] = cfg.get("dbname") or cfg.get("database")
+
     return psycopg.connect(
-        host=DB_CONFIG["host"],
-        port=DB_CONFIG["port"],
-        user=DB_CONFIG["user"],
-        password=DB_CONFIG["password"],
-        dbname=DB_CONFIG["database"],
+        host=cfg["host"],
+        port=cfg["port"],
+        user=cfg["user"],
+        password=cfg["password"],
+        dbname=cfg["dbname"],
     )
 
 def insert_transaction(data):

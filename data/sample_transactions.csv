@@ -1,5 +1,21 @@
-Account Type,Account Number,Transaction Date,Cheque Number,Description 1,Description 2,CAD$,USD$,category
-Chequing,123456,2025-10-24,,Tim Hortons Coffee,,3.50,,Food
-Chequing,123456,2025-10-24,,Netflix Subscription,,15.00,,Entertainment
-Savings,654321,2025-10-25,,Shell Gas Station,,60.00,,Transport
-Chequing,123456,2025-10-25,,Sobeys Groceries,,75.00,,Food
+"Account Type","Account Number","Transaction Date","Cheque Number","Description 1","Description 2","CAD$","USD$"
+Visa,123,10/23/2025,,"TIM HORTONS #2255 ",,-16.39,
+Visa,123,10/24/2025,,"UBER TRIP ","YYT AIRPORT",-32.45,
+Visa,123,10/25/2025,,"AMAZON.CA ORDER #4567","Electronics",-128.99,
+Visa,123,10/26/2025,,"PAYROLL DEPOSIT","Company Canada Inc.",2450.75,
+Visa,123,10/27/2025,,"COSTCO WHOLESALE","St. John's NL",-98.32,
+Visa,123,10/28/2025,,"NETFLIX.COM","Monthly Subscription",-16.99,
+Visa,123,10/29/2025,,"GOOGLE CLOUD","Billing",-18.33,
+Visa,123,10/30/2025,,"PETER’S GROCERY","Churchill Square",-87.23,
+Visa,123,10/31/2025,,"TAX REFUND","CRA Deposit",600.00,
+Visa,123,11/01/2025,,"STARBUCKS ","Water St.",-5.65,
+Visa,123,11/02/2025,,"UBER EATS","Delivery",-26.79,
+Visa,123,11/03/2025,,"AIR CANADA","Flight YYT-YUL",-624.88,
+Visa,123,11/04/2025,,"AIRBNB ","Montreal Stay",-287.10,
+Visa,123,11/05/2025,,"DOMINION SUPERMARKET","Stavanger Dr.",-132.45,
+Visa,123,11/06/2025,,"PIZZAMATIC ","Downtown",-22.45,
+Visa,123,11/07/2025,,"PAYPAL *SPOTIFY","Premium Plan",-10.99,
+Visa,123,11/08/2025,,"TAX REFUND","CRA Deposit",450.00,
+Visa,123,11/09/2025,,"WALMART CANADA ","Kelsey Dr.",-43.50,
+Visa,123,11/10/2025,,"APPLE.COM/BILL","App Store",-3.99,
+Visa,123,11/11/2025,,"SHELL GAS STATION","Torbay Rd",-76.42,
