@@ -23,14 +23,15 @@ def save_cache(cache):
 # ---------------- OLLAMA CLASSIFIER ----------------
 
 def classify_with_ollama(description: str) -> str:
-    """Ask Ollama to categorize the transaction"""
+    """Ask Ollama to categorize the transaction into one of 10 fixed categories."""
     prompt = f"""
     Classify this transaction into one of these categories:
     Income, Transfers, Food & Drink, Groceries, Shopping, Transport,
     Bills & Utilities, Entertainment, Travel, or Other.
     Transaction: {description}
-    Respond with only the category name.
+    Respond with ONLY the category name (exactly as listed) — no reasoning or explanation.
     """
+
     try:
         res = requests.post(
             OLLAMA_CONFIG["url"],
@@ -43,7 +44,22 @@ def classify_with_ollama(description: str) -> str:
         )
         res.raise_for_status()
         category = res.json().get("response", "").strip()
-        return category or "Other"
+
+        # Normalize and sanitize category output
+        category = category.split("\n")[0].strip(" '\"")  # remove quotes/newlines
+        category = category.title()  # normalize case
+
+        # Accept only known categories
+        valid_categories = {
+            "Income", "Transfers", "Food & Drink", "Groceries", "Shopping",
+            "Transport", "Bills & Utilities", "Entertainment", "Travel", "Other"
+        }
+
+        if category not in valid_categories or len(category) > 18:
+            category = "Other"
+
+        return category
+
     except Exception as e:
         print("❌ Ollama error:", e)
         return "Other"
@@ -51,10 +67,7 @@ def classify_with_ollama(description: str) -> str:
 # ---------------- HELPERS ----------------
 
 def clean_merchant_name(desc: str) -> str:
-    """
-    Extract a simple merchant key for caching.
-    Example: 'TIM HORTONS #2255' → 'tim hortons'
-    """
+
     desc = (desc or "").lower()
     desc = re.sub(r"[^a-z\s]", "", desc)
     words = desc.split()

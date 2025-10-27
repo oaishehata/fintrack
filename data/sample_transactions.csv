@@ -1,7 +1,6 @@
 "Account Type","Account Number","Transaction Date","Cheque Number","Description 1","Description 2","CAD$","USD$"
 Visa,123,10/23/2025,,"TIM HORTONS #2255 ",,-16.39,
 Visa,123,10/24/2025,,"UBER TRIP ","YYT AIRPORT",-32.45,
-Visa,123,10/25/2025,,"AMAZON.CA ORDER #4567","Electronics",-128.99,
 Visa,123,10/26/2025,,"PAYROLL DEPOSIT","Company Canada Inc.",2450.75,
 Visa,123,10/27/2025,,"COSTCO WHOLESALE","St. John's NL",-98.32,
 Visa,123,10/28/2025,,"NETFLIX.COM","Monthly Subscription",-16.99,
