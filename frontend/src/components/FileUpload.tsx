@@ -4,11 +4,41 @@ export default function FileUpload() {
     const [file, setFile] = useState<File | null>(null);
     const [message, setMessage] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [resetting, setResetting] = useState(false);
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.length) {
             setFile(e.target.files[0]);
             setMessage("");
+        }
+    };
+
+    const handleReset = async () => {
+        const confirmed = window.confirm("This will delete all transactions. Proceed?");
+        if (!confirmed) return;
+        setResetting(true);
+        setMessage("");
+        try {
+            const res = await fetch("http://127.0.0.1:5001/reset", { method: "POST" });
+            const text = await res.text();
+            let data: { message?: string; error?: string } = {};
+            try {
+                data = JSON.parse(text);
+            } catch {
+                data = { message: text };
+            }
+
+            if (res.ok) {
+                setMessage(`✅ ${data.message || "Database reset."}`);
+                setFile(null);
+            } else {
+                setMessage(`❌ Error: ${data.error || data.message || "Reset failed"}`);
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            setMessage(`❌ Reset failed: ${errorMessage}`);
+        } finally {
+            setResetting(false);
         }
     };
 
@@ -70,13 +100,22 @@ export default function FileUpload() {
             </label>
 
             <div className="upload-actions">
-                <button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className="btn primary"
-                >
-                    {uploading ? "Uploading…" : "Upload & classify"}
-                </button>
+                <div className="actions">
+                    <button
+                        onClick={handleUpload}
+                        disabled={uploading}
+                        className="btn primary"
+                    >
+                        {uploading ? "Uploading…" : "Upload & classify"}
+                    </button>
+                    <button
+                        onClick={handleReset}
+                        disabled={resetting || uploading}
+                        className="btn danger"
+                    >
+                        {resetting ? "Resetting…" : "Reset DB"}
+                    </button>
+                </div>
                 <p className="helper">
                     We parse, normalize dates, and auto-classify spending. Large files run in the background.
                 </p>

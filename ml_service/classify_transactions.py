@@ -3,10 +3,14 @@ import requests
 import json
 import os
 import re
+import subprocess
+import time
 from time import sleep
 from config import DB_CONFIG, OLLAMA_CONFIG
 
 CACHE_FILE = "category_cache.json"
+OLLAMA_START_GRACE_SECONDS = 5
+ollama_started = False
 
 def load_cache():
     if os.path.exists(CACHE_FILE):
@@ -18,6 +22,31 @@ def save_cache(cache):
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f, indent=2)
 
+def ensure_ollama_running():
+    """Attempt to verify Ollama is reachable; if not, try to start it locally once."""
+    global ollama_started
+    url = OLLAMA_CONFIG["url"].rstrip("/") + "/tags"
+    try:
+        requests.get(url, timeout=2)
+        return True
+    except Exception:
+        pass
+
+    if ollama_started:
+        return False
+
+    try:
+        print("⚙️  Starting Ollama server...")
+        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        ollama_started = True
+        time.sleep(OLLAMA_START_GRACE_SECONDS)
+        requests.get(url, timeout=5)
+        print("✅ Ollama is reachable.")
+        return True
+    except Exception as e:
+        print("❌ Could not start or reach Ollama:", e)
+        return False
+
 def classify_with_ollama(description: str) -> str:
     prompt = f"""
     Classify this transaction into one of these categories:
@@ -28,6 +57,9 @@ def classify_with_ollama(description: str) -> str:
     """
 
     try:
+        if not ensure_ollama_running():
+            return "Other"
+
         res = requests.post(
             OLLAMA_CONFIG["url"],
             json={

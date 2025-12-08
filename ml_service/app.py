@@ -168,6 +168,20 @@ def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/reset", methods=["POST"])
+def reset_db():
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("TRUNCATE TABLE transactions;")
+        print("🗑️  Transactions table truncated.")
+        return jsonify({"message": "Database reset: all transactions removed."})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     setup_db_once()
     app.run(port=5001, debug=True)
