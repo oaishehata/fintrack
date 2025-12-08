@@ -8,8 +8,6 @@ from config import DB_CONFIG, OLLAMA_CONFIG
 
 CACHE_FILE = "category_cache.json"
 
-# ---------------- CACHE UTILS ----------------
-
 def load_cache():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
@@ -20,10 +18,7 @@ def save_cache(cache):
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f, indent=2)
 
-# ---------------- OLLAMA CLASSIFIER ----------------
-
 def classify_with_ollama(description: str) -> str:
-    """Ask Ollama to categorize the transaction into one of 10 fixed categories."""
     prompt = f"""
     Classify this transaction into one of these categories:
     Income, Transfers, Food & Drink, Groceries, Shopping, Transport,
@@ -45,11 +40,9 @@ def classify_with_ollama(description: str) -> str:
         res.raise_for_status()
         category = res.json().get("response", "").strip()
 
-        # Normalize and sanitize category output
-        category = category.split("\n")[0].strip(" '\"")  # remove quotes/newlines
-        category = category.title()  # normalize case
+        category = category.split("\n")[0].strip(" '\"")
+        category = category.title()
 
-        # Accept only known categories
         valid_categories = {
             "Income", "Transfers", "Food & Drink", "Groceries", "Shopping",
             "Transport", "Bills & Utilities", "Entertainment", "Travel", "Other"
@@ -63,8 +56,6 @@ def classify_with_ollama(description: str) -> str:
     except Exception as e:
         print("❌ Ollama error:", e)
         return "Other"
-
-# ---------------- HELPERS ----------------
 
 def clean_merchant_name(desc: str) -> str:
 
@@ -103,17 +94,15 @@ def main():
         merchant_key = clean_merchant_name(desc1 or desc2 or "")
         print(f"\n🧾 ID {txn_id} | Merchant: {merchant_key}")
 
-        # --- cache hit ---
         if merchant_key in cache:
             category = cache[merchant_key]
             print(f"⚡ Using cached category: {category}")
         else:
-            # --- new classification ---
             category = classify_with_ollama(text)
             cache[merchant_key] = category
             print(f"🤖 LLM classified as: {category}")
-            save_cache(cache)  # save after each new classification
-            sleep(1.5)  # prevent rapid API calls
+            save_cache(cache)
+            sleep(1.5)
 
         update_transaction_category(txn_id, category, conn)
 

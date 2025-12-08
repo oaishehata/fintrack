@@ -11,6 +11,8 @@ interface Stats {
     total_cad: number;
     total_usd: number;
     categories: CategoryStat[];
+    duplicate_transactions: number;
+    duplicate_groups: number;
 }
 
 export default function StatsPanel() {
@@ -77,6 +79,8 @@ export default function StatsPanel() {
 
             <p><strong>Total Transactions:</strong> {stats.total_transactions}</p>
             <p><strong>Total CAD$:</strong> {stats.total_cad.toFixed(2)}</p>
+            <p><strong>Duplicate Groups:</strong> {stats.duplicate_groups}</p>
+            <p><strong>Duplicate Transactions:</strong> {stats.duplicate_transactions}</p>
 
             <h4 style={{ marginTop: "1rem", color: "#ddd" }}>By Category:</h4>
             <ul style={{ listStyle: "none", padding: 0 }}>

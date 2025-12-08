@@ -120,6 +120,28 @@ def get_stats():
                             """)
                 category_rows = cur.fetchall()
 
+                # Duplicate transaction detection by matching on key identifying fields
+                cur.execute("""
+                            WITH dupes AS (
+                                SELECT COUNT(*) AS cnt
+                                FROM transactions
+                                GROUP BY
+                                    account_number,
+                                    transaction_date,
+                                    cheque_number,
+                                    description_1,
+                                    description_2,
+                                    cad_amount,
+                                    usd_amount
+                                HAVING COUNT(*) > 1
+                            )
+                            SELECT
+                                COALESCE(SUM(cnt - 1), 0) AS duplicate_transactions,
+                                COUNT(*) AS duplicate_groups
+                            FROM dupes;
+                            """)
+                dupes_row = cur.fetchone()
+
         def safe_num(val):
             if val is None or (isinstance(val, float) and math.isnan(val)):
                 return 0.0
@@ -133,6 +155,8 @@ def get_stats():
                 {"category": row[0], "count": row[1], "total_cad": float(row[2])}
                 for row in category_rows
             ],
+            "duplicate_transactions": int(dupes_row[0] or 0),
+            "duplicate_groups": int(dupes_row[1] or 0),
         }
 
         print("📊 Stats generated:", stats)

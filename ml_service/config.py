@@ -8,7 +8,6 @@ DB_CONFIG = {
     "dbname": os.getenv("DB_NAME", "expense_db"),
 }
 
-
 OLLAMA_CONFIG = {
     "url": "http://127.0.0.1:11434/api/generate",
     "model": "phi3:mini",
