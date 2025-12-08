@@ -40,99 +40,52 @@ export default function FileUpload() {
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100vh",
-                backgroundColor: "#121212",
-                color: "#e0e0e0",
-                fontFamily: "Inter, system-ui, sans-serif",
-                margin: 0,
-            }}
-        >
-            <h1
-                style={{
-                    fontSize: "2.5rem",
-                    fontWeight: 700,
-                    marginBottom: "2rem",
-                    color: "#f5f5f5",
-                    textAlign: "center",
-                }}
-            >
-                FinTrack
-            </h1>
+        <section className="panel upload-panel">
+            <div className="panel-header">
+                <div>
+                    <p className="eyebrow">Data ingest</p>
+                    <h3>Upload transactions</h3>
+                </div>
+                <span className="chip subtle">{uploading ? "Uploading…" : "Ready"}</span>
+            </div>
 
-            <div
-                style={{
-                    backgroundColor: "#1e1e1e",
-                    padding: "2.5rem",
-                    borderRadius: "1rem",
-                    width: "90%",
-                    maxWidth: "420px",
-                    boxShadow: "0 4px 25px rgba(0,0,0,0.3)",
-                    textAlign: "center",
-                    border: "1px solid #333",
-                }}
-            >
-                <h2 style={{ fontSize: "1.4rem", marginBottom: "1.5rem", color: "#fff" }}>
-                    Upload Bank Statement (CSV)
-                </h2>
+            <label className="dropzone">
+                <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="file-input"
+                />
+                <div>
+                    <div className="dropzone-title">
+                        {file ? "Replace file" : "Drop CSV here or click to browse"}
+                    </div>
+                    <p className="dropzone-subtitle">
+                        Bank statement CSV · Columns: Account Type, Number, Date, Description, Amount
+                    </p>
+                </div>
+                <div className="file-pill">
+                    {file ? file.name : "No file selected"}
+                </div>
+            </label>
 
-                <label
-                    style={{
-                        display: "block",
-                        padding: "0.6rem 1rem",
-                        borderRadius: "0.5rem",
-                        backgroundColor: "#2b2b2b",
-                        border: "1px solid #444",
-                        color: "#ccc",
-                        cursor: "pointer",
-                        marginBottom: "1rem",
-                    }}
-                >
-                    {file ? file.name : "Choose a CSV file"}
-                    <input
-                        type="file"
-                        accept=".csv"
-                        onChange={handleFileChange}
-                        style={{ display: "none" }}
-                    />
-                </label>
-
+            <div className="upload-actions">
                 <button
                     onClick={handleUpload}
                     disabled={uploading}
-                    style={{
-                        backgroundColor: uploading ? "#555" : "#4CAF50",
-                        color: "white",
-                        fontWeight: 600,
-                        border: "none",
-                        borderRadius: "0.5rem",
-                        padding: "0.7rem 1.5rem",
-                        width: "100%",
-                        cursor: uploading ? "not-allowed" : "pointer",
-                        transition: "background-color 0.2s ease",
-                    }}
+                    className="btn primary"
                 >
-                    {uploading ? "Uploading..." : "Upload"}
+                    {uploading ? "Uploading…" : "Upload & classify"}
                 </button>
-
+                <p className="helper">
+                    We parse, normalize dates, and auto-classify spending. Large files run in the background.
+                </p>
                 {message && (
-                    <p
-                        style={{
-                            marginTop: "1.5rem",
-                            color: message.includes("Error") || message.includes("failed") ? "#ff6b6b" : "#4caf50",
-                            fontSize: "0.95rem",
-                            fontWeight: 500,
-                        }}
-                    >
+                    <p className={`helper ${message.includes("Error") || message.includes("failed") ? "error" : "success"}`}>
                         {message}
                     </p>
                 )}
             </div>
-        </div>
+        </section>
     );
 }

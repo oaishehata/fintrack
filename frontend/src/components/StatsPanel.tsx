@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface CategoryStat {
     category: string;
@@ -20,7 +20,12 @@ export default function StatsPanel() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const formatCurrency = (value: number) =>
+        value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
     const fetchStats = async () => {
+        setLoading(true);
+        setError(null);
         try {
             const res = await fetch("http://127.0.0.1:5001/stats", {
                 headers: { Accept: "application/json" },
@@ -30,14 +35,11 @@ export default function StatsPanel() {
             try {
                 const data = JSON.parse(text);
                 setStats(data);
-                console.log("📊 Stats response:", data);
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (parseErr) {
-                console.error("⚠️ Failed to parse JSON:", text);
                 throw new Error("Invalid JSON received from server");
             }
         } catch (err) {
-            console.error("Failed to fetch stats:", err);
             setError("Unable to load stats.");
         } finally {
             setLoading(false);
@@ -48,48 +50,145 @@ export default function StatsPanel() {
         fetchStats();
     }, []);
 
-    if (loading) return <p style={{ color: "#aaa" }}>Loading stats...</p>;
-    if (error) return <p style={{ color: "#ff6b6b" }}>{error}</p>;
-    if (!stats) return <p style={{ color: "#ff6b6b" }}>No data available.</p>;
+    const maxCategoryTotal = useMemo(() => {
+        if (!stats || stats.categories.length === 0) return 1;
+        return Math.max(...stats.categories.map((c) => c.total_cad), 1);
+    }, [stats]);
+
+    if (loading) {
+        return (
+            <section className="panel stats-panel">
+                <div className="panel-header">
+                    <div>
+                        <p className="eyebrow">Insights</p>
+                        <h3>Spending & Duplicate Watch</h3>
+                    </div>
+                </div>
+                <p className="helper">Loading stats…</p>
+            </section>
+        );
+    }
+    if (error) {
+        return (
+            <section className="panel stats-panel">
+                <div className="panel-header">
+                    <div>
+                        <p className="eyebrow">Insights</p>
+                        <h3>Spending & Duplicate Watch</h3>
+                    </div>
+                </div>
+                <p className="helper error">{error}</p>
+            </section>
+        );
+    }
+    if (!stats) {
+        return (
+            <section className="panel stats-panel">
+                <div className="panel-header">
+                    <div>
+                        <p className="eyebrow">Insights</p>
+                        <h3>Spending & Duplicate Watch</h3>
+                    </div>
+                </div>
+                <p className="helper error">No data available.</p>
+            </section>
+        );
+    }
+
+    const duplicateRate = stats.total_transactions
+        ? Math.min(100, Math.round((stats.duplicate_transactions / stats.total_transactions) * 100))
+        : 0;
+    const topCategory = stats.categories[0];
 
     return (
-        <div
-            style={{
-                backgroundColor: "#1b1b1b",
-                borderRadius: "1rem",
-                padding: "1.5rem",
-                width: "100%",
-                maxWidth: "450px",
-                textAlign: "left",
-                border: "1px solid #333",
-                color: "#e0e0e0",
-                margin: "1.5rem auto",
-            }}
-        >
-            <h3
-                style={{
-                    marginBottom: "1rem",
-                    color: "#fff",
-                    borderBottom: "1px solid #333",
-                    paddingBottom: "0.5rem",
-                }}
-            >
-                📊 Database Summary
-            </h3>
+        <section className="panel stats-panel">
+            <div className="panel-header">
+                <div>
+                    <p className="eyebrow">Insights</p>
+                    <h3>Spending & Duplicate Watch</h3>
+                </div>
+                <button className="btn ghost" onClick={fetchStats} disabled={loading}>
+                    {loading ? "Refreshing…" : "Refresh"}
+                </button>
+            </div>
 
-            <p><strong>Total Transactions:</strong> {stats.total_transactions}</p>
-            <p><strong>Total CAD$:</strong> {stats.total_cad.toFixed(2)}</p>
-            <p><strong>Duplicate Groups:</strong> {stats.duplicate_groups}</p>
-            <p><strong>Duplicate Transactions:</strong> {stats.duplicate_transactions}</p>
+            <div className="stat-grid">
+                <div className="stat-card">
+                    <p className="stat-label">Total transactions</p>
+                    <div className="stat-value">{stats.total_transactions.toLocaleString()}</div>
+                    <span className="chip subtle">
+                        Across {stats.categories.length} categories
+                    </span>
+                </div>
 
-            <h4 style={{ marginTop: "1rem", color: "#ddd" }}>By Category:</h4>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-                {stats.categories.map((cat) => (
-                    <li key={cat.category} style={{ marginBottom: "0.4rem" }}>
-                        <strong>{cat.category}</strong>: {cat.count} txns (${cat.total_cad.toFixed(2)})
-                    </li>
-                ))}
-            </ul>
-        </div>
+                <div className="stat-card">
+                    <p className="stat-label">Total volume (CAD)</p>
+                    <div className="stat-value">${formatCurrency(stats.total_cad)}</div>
+                    <span className="chip subtle">USD: ${formatCurrency(stats.total_usd)}</span>
+                </div>
+
+                <div className="stat-card attention">
+                    <p className="stat-label">Duplicate groups</p>
+                    <div className="stat-value">{stats.duplicate_groups}</div>
+                    <span className="chip warning">
+                        {stats.duplicate_transactions} extra txns flagged
+                    </span>
+                </div>
+            </div>
+
+            <div className="insights-row">
+                <div className="ring-card">
+                    <div
+                        className="ring"
+                        style={{
+                            background: `conic-gradient(#ff7f50 ${duplicateRate * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+                        }}
+                    >
+                        <div className="ring-center">
+                            <div className="ring-value">{duplicateRate}%</div>
+                            <span>duplicate rate</span>
+                        </div>
+                    </div>
+                    <p className="helper">
+                        {stats.duplicate_groups} groups · {stats.duplicate_transactions} duplicates over {stats.total_transactions} txns
+                    </p>
+                </div>
+
+                <div className="categories-card">
+                    <div className="categories-header">
+                        <div>
+                            <p className="eyebrow">Category breakdown</p>
+                            <h4>Where money flows</h4>
+                        </div>
+                        {topCategory && (
+                            <span className="chip success">
+                                Top: {topCategory.category} (${formatCurrency(topCategory.total_cad)})
+                            </span>
+                        )}
+                    </div>
+                    <ul className="category-list">
+                        {stats.categories.map((cat) => {
+                            const width = Math.max(6, Math.round((cat.total_cad / maxCategoryTotal) * 100));
+                            return (
+                                <li key={cat.category} className="category-row">
+                                    <div className="category-meta">
+                                        <span className="category-name">{cat.category}</span>
+                                        <span className="category-amount">${formatCurrency(cat.total_cad)}</span>
+                                    </div>
+                                    <div className="category-bar">
+                                        <div
+                                            className="category-fill"
+                                            style={{ width: `${width}%` }}
+                                            aria-label={`${cat.category} ${width}%`}
+                                        />
+                                    </div>
+                                    <div className="category-count">{cat.count} txns</div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            </div>
+        </section>
     );
 }
