@@ -29,15 +29,15 @@ export default function FileUpload() {
             }
 
             if (res.ok) {
-                setMessage(`✅ ${data.message || "Database reset."}`);
+                setMessage(data.message || "Database reset.");
                 setFile(null);
                 window.dispatchEvent(new Event("stats-refresh"));
             } else {
-                setMessage(`❌ Error: ${data.error || data.message || "Reset failed"}`);
+                setMessage(data.error || data.message || "Reset failed");
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
-            setMessage(`❌ Reset failed: ${errorMessage}`);
+            setMessage(`Reset failed: ${errorMessage}`);
         } finally {
             setResetting(false);
         }
@@ -45,7 +45,7 @@ export default function FileUpload() {
 
     const handleUpload = async () => {
         if (!file) {
-            setMessage("⚠️ Please select a file first.");
+            setMessage("Please select a file first.");
             return;
         }
 
@@ -61,12 +61,12 @@ export default function FileUpload() {
 
             const data = await res.json();
             if (res.ok) {
-                setMessage(`✅ ${data.message}`);
+                setMessage(data.message);
                 window.dispatchEvent(new Event("stats-refresh"));
-            } else setMessage(`❌ Error: ${data.error}`);
+            } else setMessage(data.error);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
-            setMessage(`❌ Upload failed: ${errorMessage}`);
+            setMessage(`Upload failed: ${errorMessage}`);
         } finally {
             setUploading(false);
         }

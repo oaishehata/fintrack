@@ -12,11 +12,12 @@ CORS(app)
 classification_lock = threading.Lock()
 classification_running = False
 
+
 def setup_db_once():
     if not getattr(app, "_db_initialized", False):
         init_db()
         app._db_initialized = True
-        print("✅ Database initialized")
+        print("Database initialized")
 
 
 def run_classification_background():
@@ -36,6 +37,7 @@ def run_classification_background():
 
     threading.Thread(target=_runner, daemon=True).start()
 
+
 @app.route("/upload_csv", methods=["POST"])
 def upload_csv():
     if "file" not in request.files:
@@ -52,25 +54,13 @@ def upload_csv():
         print(df.head())
         print("Columns detected:", list(df.columns))
 
-        required_cols = [
-            "Account Type", "Account Number", "Transaction Date",
-            "Cheque Number", "Description 1", "Description 2",
-            "CAD$", "USD$"
-        ]
-
         col = df["Transaction Date"]
         if pd.api.types.is_numeric_dtype(col):
             df["Transaction Date"] = pd.to_datetime(
-                col,
-                origin="1899-12-30",
-                unit="D",
-                errors="coerce"
+                col, origin="1899-12-30", unit="D", errors="coerce"
             ).dt.date
         else:
-            df["Transaction Date"] = pd.to_datetime(
-                col,
-                errors="coerce"
-            ).dt.date
+            df["Transaction Date"] = pd.to_datetime(col, errors="coerce").dt.date
 
         df.rename(
             columns={
@@ -90,25 +80,31 @@ def upload_csv():
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
         df.dropna(how="all", inplace=True)
-        print("First account type:", df['account_type'].iloc[0])
+        print("First account type:", df["account_type"].iloc[0])
 
         inserted = 0
         for _, row in df.iterrows():
             data = row.to_dict()
-            if not isinstance(data.get("transaction_date"), str) and pd.notna(data.get("transaction_date")):
+            if not isinstance(data.get("transaction_date"), str) and pd.notna(
+                data.get("transaction_date")
+            ):
                 data["transaction_date"] = str(data["transaction_date"])
             insert_transaction(data)
             inserted += 1
 
-        print(f"✅ Inserted {inserted} rows successfully.")
+        print(f"Inserted {inserted} rows successfully.")
 
         # Start background classification
         run_classification_background()
 
-        return jsonify({"message": f"Uploaded {inserted} transactions successfully!"}), 200
+        return (
+            jsonify({"message": f"Uploaded {inserted} transactions successfully!"}),
+            200,
+        )
 
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -119,17 +115,20 @@ def get_stats():
         with get_connection() as conn:
             with conn.cursor() as cur:
                 # Overall totals
-                cur.execute("""
+                cur.execute(
+                    """
                             SELECT
                                 COUNT(*) AS total_transactions,
                                 COALESCE(SUM(cad_amount), 0) AS total_cad,
                                 COALESCE(SUM(usd_amount), 0) AS total_usd
                             FROM transactions;
-                            """)
+                            """
+                )
                 total_row = cur.fetchone()
 
                 # Per-category breakdown
-                cur.execute("""
+                cur.execute(
+                    """
                             SELECT
                                 COALESCE(category, 'Uncategorized') AS category,
                                 COUNT(*) AS count,
@@ -137,11 +136,13 @@ def get_stats():
                             FROM transactions
                             GROUP BY category
                             ORDER BY total_cad DESC;
-                            """)
+                            """
+                )
                 category_rows = cur.fetchall()
 
                 # Duplicate transaction detection by matching on key identifying fields
-                cur.execute("""
+                cur.execute(
+                    """
                             WITH dupes AS (
                                 SELECT COUNT(*) AS cnt
                                 FROM transactions
@@ -159,7 +160,8 @@ def get_stats():
                                 COALESCE(SUM(cnt - 1), 0) AS duplicate_transactions,
                                 COUNT(*) AS duplicate_groups
                             FROM dupes;
-                            """)
+                            """
+                )
                 dupes_row = cur.fetchone()
 
         def safe_num(val):
@@ -179,11 +181,12 @@ def get_stats():
             "duplicate_groups": int(dupes_row[1] or 0),
         }
 
-        print("📊 Stats generated:", stats)
+        print("Stats generated:", stats)
         return jsonify(stats)
 
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -201,15 +204,18 @@ def classification_progress():
         classified = max(total - unclassified, 0)
         percent = round((classified / total) * 100, 1) if total else 0.0
 
-        return jsonify({
-            "running": classification_running,
-            "total": total,
-            "unclassified": unclassified,
-            "classified": classified,
-            "percent": percent,
-        })
+        return jsonify(
+            {
+                "running": classification_running,
+                "total": total,
+                "unclassified": unclassified,
+                "classified": classified,
+                "percent": percent,
+            }
+        )
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -220,10 +226,11 @@ def reset_db():
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("TRUNCATE TABLE transactions;")
-        print("🗑️  Transactions table truncated.")
+        print("Transactions table truncated.")
         return jsonify({"message": "Database reset: all transactions removed."})
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -238,6 +245,7 @@ def classify_now():
         return jsonify({"message": "Classification started in background."})
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 

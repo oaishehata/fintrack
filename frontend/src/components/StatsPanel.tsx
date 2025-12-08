@@ -52,9 +52,12 @@ export default function StatsPanel() {
         recurring_merchants: data.recurring_merchants ?? [],
     });
 
-    const fetchStats = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const fetchStats = useCallback(async (opts?: { silent?: boolean }) => {
+        const silent = opts?.silent;
+        if (!silent) {
+            setLoading(true);
+            setError(null);
+        }
         try {
             const res = await fetch("http://127.0.0.1:5001/stats", {
                 headers: { Accept: "application/json" },
@@ -68,9 +71,9 @@ export default function StatsPanel() {
                 throw new Error("Invalid JSON received from server");
             }
         } catch {
-            setError("Unable to load stats.");
+            if (!silent) setError("Unable to load stats.");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, []);
 
@@ -96,7 +99,7 @@ export default function StatsPanel() {
 
     useEffect(() => {
         const handler = () => {
-            fetchStats();
+            fetchStats({ silent: true });
             fetchProgress();
         };
         window.addEventListener("stats-refresh", handler);
@@ -108,13 +111,13 @@ export default function StatsPanel() {
 
         if (progress.running) {
             const refreshInterval = setInterval(() => {
-                fetchStats();
+                fetchStats({ silent: true });
             }, 3000);
             return () => clearInterval(refreshInterval);
         }
 
         if (progress.total > 0 && progress.unclassified === 0) {
-            fetchStats();
+            fetchStats({ silent: true });
         }
     }, [progress, fetchStats]);
 
