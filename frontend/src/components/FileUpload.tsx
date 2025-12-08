@@ -31,6 +31,7 @@ export default function FileUpload() {
             if (res.ok) {
                 setMessage(`✅ ${data.message || "Database reset."}`);
                 setFile(null);
+                window.dispatchEvent(new Event("stats-refresh"));
             } else {
                 setMessage(`❌ Error: ${data.error || data.message || "Reset failed"}`);
             }
@@ -59,8 +60,10 @@ export default function FileUpload() {
             });
 
             const data = await res.json();
-            if (res.ok) setMessage(`✅ ${data.message}`);
-            else setMessage(`❌ Error: ${data.error}`);
+            if (res.ok) {
+                setMessage(`✅ ${data.message}`);
+                window.dispatchEvent(new Event("stats-refresh"));
+            } else setMessage(`❌ Error: ${data.error}`);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             setMessage(`❌ Upload failed: ${errorMessage}`);

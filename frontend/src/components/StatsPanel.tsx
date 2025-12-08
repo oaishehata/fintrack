@@ -29,7 +29,6 @@ export default function StatsPanel() {
     const [error, setError] = useState<string | null>(null);
     const [progress, setProgress] = useState<Progress | null>(null);
     const [progressError, setProgressError] = useState<string | null>(null);
-    const [classifying, setClassifying] = useState(false);
 
     const formatCurrency = (value: number) =>
         value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -68,22 +67,6 @@ export default function StatsPanel() {
         }
     };
 
-    const startClassification = async () => {
-        setClassifying(true);
-        try {
-            const res = await fetch("http://127.0.0.1:5001/classify", { method: "POST" });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data?.error || "Failed to start classification");
-            setProgress((prev) => prev ? { ...prev, running: true } : prev);
-            fetchProgress();
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : "Failed to start classification";
-            setProgressError(msg);
-        } finally {
-            setClassifying(false);
-        }
-    };
-
     useEffect(() => {
         fetchStats();
         fetchProgress();
@@ -92,6 +75,30 @@ export default function StatsPanel() {
         }, 2500);
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        const handler = () => {
+            fetchStats();
+            fetchProgress();
+        };
+        window.addEventListener("stats-refresh", handler);
+        return () => window.removeEventListener("stats-refresh", handler);
+    }, []);
+
+    useEffect(() => {
+        if (!progress) return;
+
+        if (progress.running) {
+            const refreshInterval = setInterval(() => {
+                fetchStats();
+            }, 3000);
+            return () => clearInterval(refreshInterval);
+        }
+
+        if (progress.total > 0 && progress.unclassified === 0) {
+            fetchStats();
+        }
+    }, [progress?.running, progress?.unclassified, progress?.total]);
 
     const maxCategoryTotal = useMemo(() => {
         if (!stats || stats.categories.length === 0) return 1;
@@ -150,14 +157,6 @@ export default function StatsPanel() {
                     <p className="eyebrow">Insights</p>
                     <h3>Spending & Duplicate Watch</h3>
                 </div>
-                <div className="actions">
-                    <button className="btn ghost" onClick={fetchStats} disabled={loading}>
-                        {loading ? "Refreshing…" : "Refresh"}
-                    </button>
-                    <button className="btn ghost" onClick={startClassification} disabled={classifying}>
-                        {classifying ? "Starting…" : "Reclassify"}
-                    </button>
-                </div>
             </div>
 
             <div className="stat-grid">
@@ -173,14 +172,6 @@ export default function StatsPanel() {
                     <p className="stat-label">Total volume (CAD)</p>
                     <div className="stat-value">${formatCurrency(stats.total_cad)}</div>
                     <span className="chip subtle">USD: ${formatCurrency(stats.total_usd)}</span>
-                </div>
-
-                <div className="stat-card attention">
-                    <p className="stat-label">Duplicate groups</p>
-                    <div className="stat-value">{stats.duplicate_groups}</div>
-                    <span className="chip warning">
-                        {stats.duplicate_transactions} extra txns flagged
-                    </span>
                 </div>
             </div>
 
