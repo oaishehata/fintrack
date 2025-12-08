@@ -46,3 +46,13 @@ def test_classification_progress_endpoint():
     data = res.json()
     for key in ["running", "total", "unclassified", "classified", "percent"]:
         assert key in data
+
+
+def test_stats_categories_is_list():
+    res = requests.get(f"{API_URL}/stats", timeout=10)
+    assert res.status_code == 200
+    data = res.json()
+    assert isinstance(data.get("categories"), list)
+    if data["categories"]:
+        first = data["categories"][0]
+        assert "category" in first and "count" in first and "total_cad" in first
