@@ -308,6 +308,10 @@
   letter-spacing: -0.01em;
 }
 
+.stat-value.small {
+  font-size: 1.2rem;
+}
+
 .insights-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -423,6 +427,38 @@
 .category-count {
   color: #8c94b8;
   font-size: 0.9rem;
+}
+
+.progress-card {
+  margin: 1rem 0 1.4rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10ffb2, #4f8bff);
+  box-shadow: 0 8px 20px rgba(79, 139, 255, 0.35);
+  transition: width 0.3s ease;
 }
 
 @media (max-width: 640px) {

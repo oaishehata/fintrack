@@ -15,10 +15,21 @@ interface Stats {
     duplicate_groups: number;
 }
 
+interface Progress {
+    running: boolean;
+    total: number;
+    unclassified: number;
+    classified: number;
+    percent: number;
+}
+
 export default function StatsPanel() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [progress, setProgress] = useState<Progress | null>(null);
+    const [progressError, setProgressError] = useState<string | null>(null);
+    const [classifying, setClassifying] = useState(false);
 
     const formatCurrency = (value: number) =>
         value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -46,8 +57,40 @@ export default function StatsPanel() {
         }
     };
 
+    const fetchProgress = async () => {
+        try {
+            const res = await fetch("http://127.0.0.1:5001/classification_progress");
+            const data = await res.json();
+            setProgress(data);
+            setProgressError(null);
+        } catch {
+            setProgressError("Unable to load classification progress.");
+        }
+    };
+
+    const startClassification = async () => {
+        setClassifying(true);
+        try {
+            const res = await fetch("http://127.0.0.1:5001/classify", { method: "POST" });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.error || "Failed to start classification");
+            setProgress((prev) => prev ? { ...prev, running: true } : prev);
+            fetchProgress();
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Failed to start classification";
+            setProgressError(msg);
+        } finally {
+            setClassifying(false);
+        }
+    };
+
     useEffect(() => {
         fetchStats();
+        fetchProgress();
+        const interval = setInterval(() => {
+            fetchProgress();
+        }, 2500);
+        return () => clearInterval(interval);
     }, []);
 
     const maxCategoryTotal = useMemo(() => {
@@ -107,9 +150,14 @@ export default function StatsPanel() {
                     <p className="eyebrow">Insights</p>
                     <h3>Spending & Duplicate Watch</h3>
                 </div>
-                <button className="btn ghost" onClick={fetchStats} disabled={loading}>
-                    {loading ? "Refreshing…" : "Refresh"}
-                </button>
+                <div className="actions">
+                    <button className="btn ghost" onClick={fetchStats} disabled={loading}>
+                        {loading ? "Refreshing…" : "Refresh"}
+                    </button>
+                    <button className="btn ghost" onClick={startClassification} disabled={classifying}>
+                        {classifying ? "Starting…" : "Reclassify"}
+                    </button>
+                </div>
             </div>
 
             <div className="stat-grid">
@@ -135,6 +183,34 @@ export default function StatsPanel() {
                     </span>
                 </div>
             </div>
+
+            {progress && (
+                <div className="progress-card">
+                    <div className="progress-header">
+                        <div>
+                            <p className="stat-label">Classification progress</p>
+                            <div className="stat-value small">
+                                {progress.classified}/{progress.total} ({progress.percent}%)
+                            </div>
+                        </div>
+                        <span className={`chip ${progress.running ? "success" : "subtle"}`}>
+                            {progress.running ? "Running" : "Idle"}
+                        </span>
+                    </div>
+                    <div className="progress-bar">
+                        <div
+                            className="progress-fill"
+                            style={{ width: `${Math.min(progress.percent, 100)}%` }}
+                        />
+                    </div>
+                    {progress.unclassified > 0 && (
+                        <p className="helper">
+                            {progress.unclassified} transactions remaining to classify.
+                        </p>
+                    )}
+                    {progressError && <p className="helper error">{progressError}</p>}
+                </div>
+            )}
 
             <div className="insights-row">
                 <div className="ring-card">

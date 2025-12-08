@@ -9,12 +9,32 @@ import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
+classification_lock = threading.Lock()
+classification_running = False
 
 def setup_db_once():
     if not getattr(app, "_db_initialized", False):
         init_db()
         app._db_initialized = True
         print("✅ Database initialized")
+
+
+def run_classification_background():
+    global classification_running
+    if classification_lock.locked() or classification_running:
+        print("ℹ️ Classification already running; skipping duplicate start.")
+        return
+
+    def _runner():
+        global classification_running
+        with classification_lock:
+            classification_running = True
+            try:
+                classify_transactions_main()
+            finally:
+                classification_running = False
+
+    threading.Thread(target=_runner, daemon=True).start()
 
 @app.route("/upload_csv", methods=["POST"])
 def upload_csv():
@@ -83,7 +103,7 @@ def upload_csv():
         print(f"✅ Inserted {inserted} rows successfully.")
 
         # Start background classification
-        threading.Thread(target=classify_transactions_main, daemon=True).start()
+        run_classification_background()
 
         return jsonify({"message": f"Uploaded {inserted} transactions successfully!"}), 200
 
@@ -168,6 +188,32 @@ def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/classification_progress", methods=["GET"])
+def classification_progress():
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM transactions;")
+                total = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM transactions WHERE category IS NULL;")
+                unclassified = cur.fetchone()[0]
+
+        classified = max(total - unclassified, 0)
+        percent = round((classified / total) * 100, 1) if total else 0.0
+
+        return jsonify({
+            "running": classification_running,
+            "total": total,
+            "unclassified": unclassified,
+            "classified": classified,
+            "percent": percent,
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/reset", methods=["POST"])
 def reset_db():
     try:
@@ -176,6 +222,20 @@ def reset_db():
                 cur.execute("TRUNCATE TABLE transactions;")
         print("🗑️  Transactions table truncated.")
         return jsonify({"message": "Database reset: all transactions removed."})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/classify", methods=["POST"])
+def classify_now():
+    try:
+        if classification_lock.locked() or classification_running:
+            return jsonify({"message": "Classification already running."})
+
+        run_classification_background()
+        return jsonify({"message": "Classification started in background."})
     except Exception as e:
         import traceback
         traceback.print_exc()
