@@ -314,7 +314,7 @@
 
 .insights-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
 }
 
@@ -459,6 +459,62 @@
   background: linear-gradient(90deg, #10ffb2, #4f8bff);
   box-shadow: 0 8px 20px rgba(79, 139, 255, 0.35);
   transition: width 0.3s ease;
+}
+
+.trend-card {
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+}
+
+.trend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.trend-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.trend-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trend-month {
+  font-weight: 700;
+}
+
+.trend-amount {
+  color: #9fa7c9;
+  font-size: 0.95rem;
+}
+
+.trend-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.trend-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10ffb2, #4f8bff);
+  box-shadow: 0 6px 18px rgba(16, 255, 178, 0.25);
+}
+
+.trend-count {
+  color: #8c94b8;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 640px) {

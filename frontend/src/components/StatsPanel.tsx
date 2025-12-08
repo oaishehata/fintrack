@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 interface CategoryStat {
     category: string;
@@ -13,6 +13,11 @@ interface Stats {
     categories: CategoryStat[];
     duplicate_transactions: number;
     duplicate_groups: number;
+    recent_30d_count: number;
+    recent_30d_total_cad: number;
+    avg_daily_30d: number;
+    monthly_trend: { month: string; count: number; total_cad: number }[];
+    recurring_merchants: { merchant: string; txns: number; active_months: number; total_cad: number; avg_cad: number }[];
 }
 
 interface Progress {
@@ -33,7 +38,21 @@ export default function StatsPanel() {
     const formatCurrency = (value: number) =>
         value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    const fetchStats = async () => {
+    const normalizeStats = (data: Partial<Stats>): Stats => ({
+        total_transactions: data.total_transactions ?? 0,
+        total_cad: data.total_cad ?? 0,
+        total_usd: data.total_usd ?? 0,
+        categories: data.categories ?? [],
+        duplicate_transactions: data.duplicate_transactions ?? 0,
+        duplicate_groups: data.duplicate_groups ?? 0,
+        recent_30d_count: data.recent_30d_count ?? 0,
+        recent_30d_total_cad: data.recent_30d_total_cad ?? 0,
+        avg_daily_30d: data.avg_daily_30d ?? 0,
+        monthly_trend: data.monthly_trend ?? [],
+        recurring_merchants: data.recurring_merchants ?? [],
+    });
+
+    const fetchStats = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -44,19 +63,18 @@ export default function StatsPanel() {
             const text = await res.text();
             try {
                 const data = JSON.parse(text);
-                setStats(data);
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (parseErr) {
+                setStats(normalizeStats(data));
+            } catch {
                 throw new Error("Invalid JSON received from server");
             }
-        } catch (err) {
+        } catch {
             setError("Unable to load stats.");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchProgress = async () => {
+    const fetchProgress = useCallback(async () => {
         try {
             const res = await fetch("http://127.0.0.1:5001/classification_progress");
             const data = await res.json();
@@ -65,7 +83,7 @@ export default function StatsPanel() {
         } catch {
             setProgressError("Unable to load classification progress.");
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchStats();
@@ -74,7 +92,7 @@ export default function StatsPanel() {
             fetchProgress();
         }, 2500);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchStats, fetchProgress]);
 
     useEffect(() => {
         const handler = () => {
@@ -83,7 +101,7 @@ export default function StatsPanel() {
         };
         window.addEventListener("stats-refresh", handler);
         return () => window.removeEventListener("stats-refresh", handler);
-    }, []);
+    }, [fetchStats, fetchProgress]);
 
     useEffect(() => {
         if (!progress) return;
@@ -98,10 +116,10 @@ export default function StatsPanel() {
         if (progress.total > 0 && progress.unclassified === 0) {
             fetchStats();
         }
-    }, [progress?.running, progress?.unclassified, progress?.total]);
+    }, [progress, fetchStats]);
 
     const maxCategoryTotal = useMemo(() => {
-        if (!stats || stats.categories.length === 0) return 1;
+        if (!stats || !stats.categories || stats.categories.length === 0) return 1;
         return Math.max(...stats.categories.map((c) => c.total_cad), 1);
     }, [stats]);
 
@@ -172,6 +190,14 @@ export default function StatsPanel() {
                     <p className="stat-label">Total volume (CAD)</p>
                     <div className="stat-value">${formatCurrency(stats.total_cad)}</div>
                     <span className="chip subtle">USD: ${formatCurrency(stats.total_usd)}</span>
+                </div>
+
+                <div className="stat-card">
+                    <p className="stat-label">Last 30 days</p>
+                    <div className="stat-value">${formatCurrency(stats.recent_30d_total_cad)}</div>
+                    <span className="chip subtle">
+                        {stats.recent_30d_count} txns · ${formatCurrency(stats.avg_daily_30d)} avg/day
+                    </span>
                 </div>
             </div>
 
@@ -254,6 +280,74 @@ export default function StatsPanel() {
                             );
                         })}
                     </ul>
+                </div>
+            </div>
+
+            <div className="insights-row">
+                <div className="categories-card">
+                    <div className="categories-header">
+                        <div>
+                            <p className="eyebrow">Recurring merchants</p>
+                            <h4>Likely recurring payments</h4>
+                        </div>
+                        <span className="chip subtle">
+                            {stats.recurring_merchants.length} found
+                        </span>
+                    </div>
+                    {stats.recurring_merchants.length === 0 ? (
+                        <p className="helper">No recurring patterns detected yet.</p>
+                    ) : (
+                        <ul className="category-list">
+                            {stats.recurring_merchants.map((m) => (
+                                <li key={m.merchant} className="category-row">
+                                    <div className="category-meta">
+                                        <span className="category-name">{m.merchant}</span>
+                                        <span className="category-amount">${formatCurrency(m.total_cad)}</span>
+                                    </div>
+                                    <div className="category-bar">
+                                        <div
+                                            className="category-fill"
+                                            style={{ width: `${Math.min(100, Math.max(10, Math.round((m.txns / stats.total_transactions) * 100))) }%` }}
+                                        />
+                                    </div>
+                                    <div className="category-count">
+                                        {m.txns} txns · {m.active_months} months · avg ${formatCurrency(m.avg_cad)}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="trend-card">
+                    <div className="categories-header">
+                        <div>
+                            <p className="eyebrow">Monthly cadence</p>
+                            <h4>Last 6 months</h4>
+                        </div>
+                    </div>
+                    {stats.monthly_trend.length === 0 ? (
+                        <p className="helper">No dated transactions yet.</p>
+                    ) : (
+                        <ul className="trend-list">
+                            {stats.monthly_trend.map((m) => {
+                                const max = Math.max(...stats.monthly_trend.map((x) => x.total_cad), 1);
+                                const width = Math.max(8, Math.round((m.total_cad / max) * 100));
+                                return (
+                                    <li key={m.month} className="trend-row">
+                                        <div className="trend-meta">
+                                            <span className="trend-month">{m.month}</span>
+                                            <span className="trend-amount">${formatCurrency(m.total_cad)}</span>
+                                        </div>
+                                        <div className="trend-bar">
+                                            <div className="trend-fill" style={{ width: `${width}%` }} />
+                                        </div>
+                                        <div className="trend-count">{m.count} txns</div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </div>
             </div>
         </section>
